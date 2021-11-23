@@ -5,43 +5,48 @@
 #include <sstream>
 using namespace std;
 
+// INPUT: a string of integers separated by spaces
+// OUTPUT: a vector containing the integers
+// Based on the algorithm found here: slaystudy.com/c-split-string-by-space-into-vector
+vector<int> convertStringToIntVector(string toConvert){
+	vector<int> toReturn;
+	string temp = "";
+
+	for( int i = 0; i < toConvert.length() + 1; i++ ){
+		if(toConvert[i] == ' ' || i == toConvert.length()){
+			int intVal = stoi(temp);
+			toReturn.push_back(intVal);
+			temp = "";
+		}
+		else{
+			temp.push_back(toConvert[i]);
+		}
+	}
+	return toReturn;
+}
+
+// INPUT: a vector of ints
+// OUTPUT: each int in the vector, separated by a space, ending in a new line.
+void printIntVector(vector<int> toPrint) {
+	for( int i = 0; i < toPrint.size(); i++){
+		cout << toPrint.at(i) << " ";
+	}
+	cout << "\n";
+}
+
 int main() {
 	ifstream input("input.txt");
 	string line;
 
 	if(!input.is_open()){ return 1; }
 
-	vector<int> available;
 	
 	// special case for first line
 	getline(input, line);
-	
-	
-	cout << line << "\n";
+	vector<int> available = convertStringToIntVector(line);
+	printIntVector(available);
+	// now need to iterate through the rest of the input.txt file
 
-	int currentSpace = 0;
-	int nextSpace = 0;
-
-	string temp = "";
-	for( int i = 0; i < line.length() + 1; i++ ){
-		cout << "i = " << i << "\n";
-
-		if(line[i] == ' ' || i == line.length()){
-			int intVal = stoi(temp);
-			available.push_back(intVal);
-			cout << "in if, line[i] = " << line[i] << "\n";
-			temp = "";
-		}
-		else{
-			cout << "in else, line[i] = " << line[i] << "\n";
-			temp.push_back(line[i]);
-		}
-	}
-
-
-	for( int i = 0; i < available.size(); i++){
-		std::cout << available.at(i) << " ";
-	}
 
 	input.close();
 	return 0;
