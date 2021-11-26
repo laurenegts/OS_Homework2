@@ -49,27 +49,51 @@ bool compareNeedToAvailable(vector<int> needProcess, vector<int> work){
 	}
 	return true;
 }
+
 bool isSafeState(int numberOfProcesses, vector<int> available, vector<vector<int>> need, 
 		vector<vector<int>> allocation){
 
 	vector<int> work (available);
-	
+
 	vector<bool> finish (numberOfProcesses);
 	for(int i = 0; i < numberOfProcesses; i++) { finish[i] = false; }
 
-	bool stepTwoTrue = false;
-	for( int i = 0; i < numberOfProcesses; i++) {
-		// need of process i is <= work
-		if( finish[i] == false && compareNeedToAvailable(need[i], work) == true ){
-			break;
-		}
-		for(int j = 0; i < numberOfProcesses; j++){
-			for(int k = 0; k < work.size(); k++){ 
-				int temp = work[k] + allocation[j][k];
-				work[k] = temp;
+	int numberOfProcessesAllocated = 0;
+
+	vector<int> allocatedProcesses;
+	// TODO: if I keep using this idea, add in an additional check to prevent infinite looping
+	// Book says that the safety algorithim may require an order of m * n^2 operations to 
+	// determine whether a state is safe, so if I stop looping at count = that + 1 then
+	// I won't infinitely loop and I'll know for sure that it's not a safe state.
+	while(numberOfProcessesAllocated < numberOfProcesses){
+		for( int i = 0; i < numberOfProcesses; i++) {
+			cout << "in first for loop, i = " << i << "\n";
+			cout << "\n";
+			// already allocated
+			if( finish[i] == true ){
+				continue;
 			}
-		}	
-		finish[i] = true;
+			// move on to next process because there's not enough resources to allocate
+			// to this process
+			if( finish[i] == false && compareNeedToAvailable(need[i], work) == false ){
+				cout << "in if statement, about to break\n";
+				continue;
+			}
+			
+		//for(int j = 0; j < numberOfProcesses; j++){
+		//	cout << "j loop, working on process " << j << "\n";
+			// allocate resources
+			for(int k = 0; k < work.size(); k++){ 
+				int temp = work[k] + allocation[i][k];
+				work[k] = temp;
+				cout << "k = " << k << ", work[k] = " << work[k] << "\n";
+			}
+	//	}	
+			finish[i] = true;
+			allocatedProcesses.push_back(i);
+			cout << "allocating to process " << i << "\n";
+			numberOfProcessesAllocated++;
+		}
 	}
 
 	for( int i = 0; i < finish.size(); i++){
@@ -77,12 +101,35 @@ bool isSafeState(int numberOfProcesses, vector<int> available, vector<vector<int
 			return false;
 		}
 	}
+	for(int i = 0; i < allocatedProcesses.size(); i++){
+		cout << allocatedProcesses[i] << " ";
+	}
+	// TODO: instead of returning a bool, return the allocatedProcesses vector
 	return true;
 }
 
+bool compareRequestToNeedOrAvailable(vector<int> request, vector<int> compare){
+	for( int i = 0; i < request.size(); i++){
+		if(request[i] > compare[i]){
+			return false;
+		}
+	}
+	return true;
+}
+
+// maybe allocate resources as it's possible to do so
+// and then if resulting vector is less than numberOfProcesses
+// we know it's not a safe state because it doesn't include all the processes?
+
+/*vector<int> resourceRequest(vector<vector<int>> request, vector<int> available, 
+		vector<vector<int>> allocation){
+	vector<vector<int>> = 
+
+}
+*/
 
 int main() {
-	ifstream input("input.txt");
+	ifstream input("input2.txt");
 	string line;
 
 	vector<int> available;
@@ -110,7 +157,7 @@ int main() {
 		getline(input, line);
 	}
 	numberOfProcesses = allocation.size();
-
+	cout << "numberOfProcesses = " << numberOfProcesses << "\n";
 	print2DVector(allocation);
 
 	// allocation.size is the number of processes.  idk how to make it so we just read 
@@ -138,7 +185,14 @@ int main() {
 
 	print2DVector(need);
 
+	bool result = isSafeState(numberOfProcesses, available, need, allocation);
 
+	if( result == true ) { 
+		cout << "system is in a safe state\n"; 
+	}
+	else {
+		cout << "system is in an unsafe state\n";
+	}
 
 	input.close();
 	return 0;
