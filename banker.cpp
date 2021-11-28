@@ -5,9 +5,14 @@
 using namespace std;
 
 /* 
- * Utility function to convert a string of ints to a vector of ints.
- * INPUT: a string of integers separated by spaces
- * OUTPUT: a vector containing the integers
+ * Utility function used when reading in input.  Converts a string of ints into a vector of ints.
+ * INPUT: a string of integers separated by spaces.
+ * OUTPUT: a vector containing the integers, if all of the integers in the string are non-negative
+ * 	   a vector containing -1 if an integer in the string is negative, indicating that the 
+ * 	   program should exit with an error because in this algorithm, the system cannot have a
+ * 	   negative number of resources available, and a process cannot be allocated or request a 
+ * 	   negative number of resources.
+ * 	    	   
  * Based on the algorithm found here: slaystudy.com/c-split-string-by-space-into-vector
 */
 vector<int> convertStringToIntVector(string toConvert){
@@ -17,6 +22,12 @@ vector<int> convertStringToIntVector(string toConvert){
 	for( int i = 0; i < toConvert.length() + 1; i++ ){
 		if(toConvert[i] == ' ' || i == toConvert.length()){
 			int intVal = stoi(temp);
+			// Error checking: if the value is negative, return an error so that the program
+			// can exit in main
+			if( intVal < 0 ){
+				vector<int> errorVector (1, -1);
+				return errorVector;
+			}
 			toReturn.push_back(intVal);
 			temp = "";
 		}
@@ -29,7 +40,7 @@ vector<int> convertStringToIntVector(string toConvert){
 
 /* 
  * Utility function to print an int vector to cout.
- * INPUT: a vector of ints
+ * INPUT: a vector of ints.
  * OUTPUT: each int in the vector, separated by a space, ending in a new line.
  */
 void printIntVector(vector<int> toPrint) {
@@ -41,7 +52,7 @@ void printIntVector(vector<int> toPrint) {
 
 /* 
  * Utility function to print a vector of int vectors to cout.
- * INPUT: a vector of int vectors
+ * INPUT: a vector of int vectors.
  * OUTPUT: each int vector is printed on its own line, with its contents separated by spaces.  
  * For example, given the input < <1, 2, 3>, <4, 5, 6>, <7, 8, 9> >, the output would be:
  * 1 2 3
@@ -56,9 +67,9 @@ void print2DVector(vector<vector<int>> toPrint){
 }
 
 /*
- * Utility function to compare the need vector to the work vector in isSafeState
+ * Utility function to compare the need vector to the work vector in isSafeState.
  * INPUT: needProcess: the process that is requesting the resources that it needs
- * 	  work: the resources that are currently available to the system
+ * 	  work: the resources that are currently available to the system.
  * OUTPUT: true if, for all of the resources that needProcess is requesting, the available 
  * 		amount of that resource is <= the request.  Otherwise, returns false.
 */  
@@ -72,8 +83,14 @@ bool compareNeedToAvailable(vector<int> needProcess, vector<int> work){
 }
 
 /* 
- *
- *
+ * Determines whether or not a system is in a safe state.
+ * INPUT: numberOfProcesses: the number of processes in the system
+ * 	  available: the resources that are available to the system
+ * 	  need: the resources that each process needs to be able to run
+ * 	  allocation: the resources that each process has currently been allocated
+ * OUTPUT: if the system is in a safe state: a vector containing the processes in the order
+ * 		that they were allocated in.
+ * 	   if the system is in an unsafe state: a vector containing -1.
 */
 
 vector<int> isSafeState(int numberOfProcesses, vector<int> available, vector<vector<int>> need, 
@@ -87,17 +104,18 @@ vector<int> isSafeState(int numberOfProcesses, vector<int> available, vector<vec
 	int numberOfProcessesAllocated = 0;
 
 	vector<int> allocatedProcesses;
-	// TODO: if I keep using this idea, add in an additional check to prevent infinite looping
-	// Book says that the safety algorithim may require an order of m * n^2 operations to 
-	// determine whether a state is safe, so if I stop looping at count = that + 1 then
-	// I won't infinitely loop and I'll know for sure that it's not a safe state.
 	
+	// According to the textbook, the safety algorithm may require an order of 
+	// numberofResources * numberofProcesses^2 to determine if a state is safe.
+	// So, if I force the program to stop when it has run 
+	// numberOfResources * numberOfProcesses^2 + 1 times, that will prevent an infinite
+	// loop and ensure that the loop only stops running when the system is guarenteed
+	// to be in an unsafe state
 	int stop = ( (work.size()) * numberOfProcesses * numberOfProcesses) + 1;
-	cout << "made stop\n";
-	int count = 0;
+	int loopCount = 0;
 
 	while( (numberOfProcessesAllocated < numberOfProcesses) && 
-			count < stop ){
+			loopCount < stop ){
 		for( int i = 0; i < numberOfProcesses; i++) {
 			// Skip this process because it's already been allocated resources
 			if( finish[i] == true ){
@@ -125,34 +143,28 @@ vector<int> isSafeState(int numberOfProcesses, vector<int> available, vector<vec
 			// Increase counter
 			numberOfProcessesAllocated++;
 		}
-		count++;
+		loopCount++;
 	}
 	
 	// Check if finish is true for all processes.  If finish is true for all processes, then
 	// the system is in a safe state, otherwise it's in an unsafe state
 	for( int i = 0; i < finish.size(); i++){
 		if( finish[i] == false ){
-			//TODO replace allocatedProcesses with a vector<int> = -1 because that way
-			// I'll be able to easily check if it's a safe state or not, outside of this
-			// function
-			cout << "about to set allocatedProcesses[0] = -1\n";
+			// Return a vector that contains only -1 to indicate an error
 			vector<int> errorVector(1, -1);
-			cout << "set allocatedProcesses[0] = -1\n";
 			return errorVector;
 		}
 	}
 	
-	// TODO: instead of returning a bool, return the allocatedProcesses vector
 	return allocatedProcesses;
 }
 
-// TODO: in the readme make sure to mention that the expection is that the processes
-// will start at P_0 and increase by 1, i.e. be the order P_0, P_1, ..., P_n, not 
-// P_n, ..., P_1, P_0 or P_3, P_0, P_1, P_2 
-// also the available matrix is expected to be one line, all of the resources for a process are
-// expected to be listed on a single line
-int main() {
-	ifstream input("safe.txt");
+int main( int argc, char *argv[] ) {
+	if( argc != 2){
+		cout << "Error: no input file provided.  See readme.txt for usage.\n";
+		exit(EXIT_FAILURE);
+	}
+	ifstream input(argv[1]);
 	string line;
 
 	vector<int> available;
@@ -163,21 +175,35 @@ int main() {
 	int numberOfProcesses; // n on the slides
 	int numberOfResources; // m on the slides
 
-	// Exit with error if input fails to open because that will crash the program 
-	if(!input.is_open()){ return 1; }
+	// Error checking: exit with error if input fails to open because that will crash the program 
+	if(!input.is_open()){ 
+       		cout << "Error: input file failed to open.\n";
+		exit(EXIT_FAILURE);
+	}
 
-	
-	// Special case to get the available matrix in the first line
+	// Special case to get the available matrix from the first line
 	getline(input, line);
 	available = convertStringToIntVector(line);
+	if( available[0] == -1 ){
+		cout << "Error in input file: negative number.  In this algorithm, the system cannot have a negative amount of resources available.\n";
+		exit(EXIT_FAILURE);
+	}
 	numberOfResources = available.size(); 
 	// printIntVector(available);
 
 	// Read in the allocation matrix.  Store each line (aka the allocated resources for an
-	// individual process) into its own vector, and put that into the allocation vector.
+	// individual process) into its own vector, and put that vector into the allocation vector
 	getline(input, line);
 	while( line != "Max:" ){
 		vector<int> temp = convertStringToIntVector(line);
+		if( temp[0] == -1 ){
+			cout << "Error in input file: negative number.  In this algorithm, a process cannot be allocated a negative amount of resources.\n";
+			exit(EXIT_FAILURE);
+		}
+		if( temp.size() != numberOfResources ){ 
+			cout << "Error in input file: a line in the allocation matrix is not the correct length.\n";
+			exit(EXIT_FAILURE); 
+		}
 		allocation.push_back(temp);
 		getline(input, line);
 	}
@@ -185,18 +211,30 @@ int main() {
 	//cout << "numberOfProcesses = " << numberOfProcesses << "\n";
 	//print2DVector(allocation);
 
-	// I'm not sure how to read cleanly to the end of the file, so instead I'm just reading 
-	// for as many times as we have processes, because that's guarenteed to be the right 
-	// number of lines.  If there's fewer lines remaining than there are processes, then that 
-	// means that the max matrix isn't the same size as the allocation matrix, which means the 
-	// input file is messed up, so
-	// the program is because if it's
-	// not the right number of lines then the input file is messed up, so it should crash anyways.
-	// it's a feature, not a bug.
-	for(int i = 0; i < numberOfProcesses; i++){
-		getline(input, line);
+	// Read to end of file to get the max matrix
+	while(getline(input, line)){
+		if(input.eof()){ break; }
 		vector<int> temp = convertStringToIntVector(line);
+		if( temp[0] == -1 ) {
+			cout << "Error in input file: a line in the max matrix contains a negative number.  In this algorithm, a process cannot request a negative amount of resources\n";
+			exit(EXIT_FAILURE);
+		}
+		if( temp.size() != numberOfResources ) {
+		
+			cout << "Error in input file: a line in the max matrix is not the correct length.\n";
+			exit(EXIT_FAILURE);
+		}
 		max.push_back(temp);
+	}
+	
+	input.close();
+
+	// Error checking: if the allocation and max  matrices aren't the same size, 
+	// then exit with an error because that means the input file is invalid
+	if( allocation.size() != max.size() ){ 
+		cout << "Error in input file: the allocation matrix and the max matrix are not the same size.\n";
+		exit(EXIT_FAILURE);
+		return 1; 
 	}
 
 	//print2DVector(max);
@@ -213,6 +251,7 @@ int main() {
 
 	//print2DVector(need);
 
+	// Call isSafeState and then print the result
 	vector<int> result = isSafeState(numberOfProcesses, available, need, allocation);
 
 	if( result[0] == -1 ) { 
@@ -226,6 +265,5 @@ int main() {
 		cout << ">\n";
 	}
 
-	input.close();
 	return 0;
 }
